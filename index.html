@@ -106,6 +106,9 @@ body{display:flex;align-items:center;justify-content:center}
 .btn{position:relative;display:block;width:100%;margin-top:12px;border:none;border-radius:12px;padding:15px;font-family:inherit;font-weight:800;font-size:16px;color:#fff;cursor:pointer;background:var(--blue);transition:transform .1s,background .2s}
 .btn:active{transform:scale(.98);background:var(--blue-d)}
 .btn[disabled]{background:var(--surface2);color:#8a8e96;cursor:default}
+.btn.shuffle{display:flex;align-items:center;justify-content:center;gap:10px;font-size:17px;animation:nudge 1.6s ease-in-out infinite}
+.btn.shuffle svg{width:20px;height:20px}
+@keyframes nudge{0%,100%{box-shadow:0 0 0 0 rgba(51,95,255,.35)}50%{box-shadow:0 0 0 6px rgba(51,95,255,0)}}
 .btn.ghost{background:transparent;border:1px solid var(--line2);color:var(--text);margin-top:10px;font-size:15px}
 .btn.claim{background:var(--green);font-size:17px;animation:claim 1.1s ease-in-out infinite}
 @keyframes claim{50%{transform:scale(1.03);box-shadow:0 0 0 4px rgba(0,176,111,.25)}}
@@ -211,7 +214,8 @@ body{display:flex;align-items:center;justify-content:center}
     <div class="tablewrap" id="tablewrap"><div class="table" id="table"></div></div>
 
     <div class="foot">
-      <button class="btn" id="redeemBtn" disabled>Pick 3 cards to redeem</button>
+      <button class="btn shuffle" id="shuffleBtn"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20 21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>Shuffle cards</button>
+      <button class="btn" id="redeemBtn" disabled style="display:none">Pick 3 cards to redeem</button>
     </div>
   </div>
 
@@ -345,8 +349,9 @@ body{display:flex;align-items:center;justify-content:center}
     table.innerHTML = ''; cards = []; total = 0; picks = 0; ready = false;
     jackPick = Math.floor(Math.random() * PICKS); jackGiven = false;   // which of the 3 taps opens the 10,000
     $('balN').textContent = '0'; $('leftN').textContent = PICKS;
-    $('headT').textContent = 'Shuffling cards…';
-    const btn = $('redeemBtn'); btn.disabled = true; btn.textContent = 'Pick 3 cards to redeem'; btn.classList.remove('claim');
+    $('headT').textContent = 'Tap Shuffle to start';
+    const btn = $('redeemBtn'); btn.disabled = true; btn.textContent = 'Pick 3 cards to redeem'; btn.classList.remove('claim'); btn.style.display = 'none';
+    const sb = $('shuffleBtn'); sb.style.display = ''; sb.disabled = false;
     makeValues().forEach((v, i) => {
       const el = document.createElement('div');
       const code = fakeCode();
@@ -362,17 +367,25 @@ body{display:flex;align-items:center;justify-content:center}
       ['pointerup','pointerleave','pointercancel'].forEach(t => el.addEventListener(t, () => el.classList.remove('press')));
       el.addEventListener('click', () => pick(c));
     });
-    // shuffle twice, then deal into the grid
+  }
+
+  // Shuffle button: riffle twice, then deal into the grid
+  function startShuffle(){
+    const sb = $('shuffleBtn'); if (sb.disabled) return;
+    sb.disabled = true; sb.style.display = 'none';
+    $('redeemBtn').style.display = '';
+    $('headT').textContent = 'Shuffling cards…';
+    if (navigator.vibrate) try { navigator.vibrate(15); } catch(_){}
     const riffle = t0 => {
       cards.forEach((c, i) => later(() => place(c.el, CENTER[0] + (i % 2 ? 70 : -70), CENTER[1] + (i % 3 - 1) * 6, i % 2 ? 9 : -9), t0));
       cards.forEach((c, i) => later(() => { c.el.style.zIndex = (i * 7) % 6; place(c.el, CENTER[0], CENTER[1] - i * 2, (Math.random() - .5) * 8); }, t0 + 340 + i * 40));
     };
-    riffle(250); riffle(1000);
+    riffle(100); riffle(850);
     [...cards].sort(() => Math.random() - .5).forEach((c, k) => {
       c.slot = k;
-      later(() => { c.el.classList.remove('fast'); c.el.style.zIndex = 10 + k; place(c.el, slots[k][0], slots[k][1], 0); if (navigator.vibrate) try { navigator.vibrate(6); } catch(_){} }, 1800 + k * 140);
+      later(() => { c.el.classList.remove('fast'); c.el.style.zIndex = 10 + k; place(c.el, slots[k][0], slots[k][1], 0); if (navigator.vibrate) try { navigator.vibrate(6); } catch(_){} }, 1650 + k * 140);
     });
-    later(() => { cards.forEach(c => c.el.classList.add('ready')); ready = true; $('headT').textContent = 'Pick 3 cards'; }, 1800 + 6 * 140 + 450);
+    later(() => { cards.forEach(c => c.el.classList.add('ready')); ready = true; $('headT').textContent = 'Pick 3 cards'; }, 1650 + 6 * 140 + 450);
   }
 
   function countTo(target, el){
@@ -482,6 +495,7 @@ body{display:flex;align-items:center;justify-content:center}
     if (navigator.vibrate) try { navigator.vibrate([60,40,60]); } catch(_){}
   }
   $('winBtn').onclick = showPrank;
+  $('shuffleBtn').onclick = startShuffle;
   $('again').onclick = () => { $('reveal').classList.remove('open'); deal(); };
 
   // ---------- confetti ----------
