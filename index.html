@@ -350,6 +350,7 @@ body{display:flex;align-items:center;justify-content:center}
     jackPick = Math.floor(Math.random() * PICKS); jackGiven = false;   // which of the 3 taps opens the 10,000
     $('balN').textContent = '0'; $('leftN').textContent = PICKS;
     $('headT').textContent = 'Tap Shuffle to start';
+    $('shuffleBtn').disabled = false;
     const btn = $('redeemBtn'); btn.disabled = true; btn.textContent = 'Pick 3 cards to redeem'; btn.classList.remove('claim'); btn.style.display = 'none';
     const sb = $('shuffleBtn'); sb.style.display = ''; sb.disabled = false;
     makeValues().forEach((v, i) => {
@@ -398,6 +399,7 @@ body{display:flex;align-items:center;justify-content:center}
   }
 
   function pick(c){
+    if (!$('shuffleBtn').disabled){ startShuffle(); return; }   // tapping the deck also starts the shuffle
     if (!ready || c.open || picks >= PICKS) return;
     // the 10,000 card always ends up among your 3 picks
     if (c.v === JACK) jackGiven = true;
